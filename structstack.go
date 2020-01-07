@@ -170,7 +170,11 @@ func (s *structstack) fieldbits(f field, val reflect.Value) (size int) {
 	case reflect.Slice, reflect.String:
 		switch f.NativeType.Kind() {
 		case reflect.Slice, reflect.String, reflect.Array, reflect.Ptr:
-			alen = val.Len()
+			if f.SizeExpr == nil {
+				alen = val.Len()
+			} else {
+				alen = s.evalSize(f)
+			}
 		default:
 			return 0
 		}

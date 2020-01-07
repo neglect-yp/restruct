@@ -705,19 +705,32 @@ func TestSizeExpr(t *testing.T) {
 		Data []byte `struct:"size=Len*2"`
 	}
 
-	expectStruct := sizeStruct{
-		2, []byte{0, 1, 2, 3},
+	{
+		expectStruct := sizeStruct{
+			2, []byte{0, 1, 2, 3},
+		}
+		expectData := []byte{2, 0, 1, 2, 3}
+
+		var actualStruct sizeStruct
+		err := Unpack(expectData, binary.LittleEndian, &actualStruct)
+		assert.Nil(t, err)
+		assert.Equal(t, expectStruct, actualStruct)
+
+		actualData, err := Pack(binary.LittleEndian, &expectStruct)
+		assert.Nil(t, err)
+		assert.Equal(t, expectData, actualData)
 	}
-	expectData := []byte{2, 0, 1, 2, 3}
 
-	var actualStruct sizeStruct
-	err := Unpack(expectData, binary.LittleEndian, &actualStruct)
-	assert.Nil(t, err)
-	assert.Equal(t, expectStruct, actualStruct)
+	{
+		s := sizeStruct{
+			2, []byte{0, 1, 2},
+		}
+		expectData := []byte{2, 0, 1, 2, 0}
 
-	actualData, err := Pack(binary.LittleEndian, &expectStruct)
-	assert.Nil(t, err)
-	assert.Equal(t, expectData, actualData)
+		actualData, err := Pack(binary.LittleEndian, &s)
+		assert.Nil(t, err)
+		assert.Equal(t, expectData, actualData)
+	}
 }
 
 func TestBitsExpr(t *testing.T) {

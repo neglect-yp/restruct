@@ -288,18 +288,24 @@ func (e *encoder) write(f field, v reflect.Value) {
 		e.write(f.Elem(), v.Elem())
 
 	case reflect.Array, reflect.Slice, reflect.String:
-		switch f.NativeType.Kind() {
+		nativeTypeKind := f.NativeType.Kind()
+		if nativeTypeKind != reflect.Array && nativeTypeKind != reflect.Slice && nativeTypeKind != reflect.String {
+			panic(fmt.Errorf("invalid array cast type: %s", f.NativeType.String()))
+		}
+
+		len := ov.Len()
+		cap := len
+		switch nativeTypeKind {
 		case reflect.Slice, reflect.String:
 			if f.SizeExpr != nil {
-				if l := e.evalSize(f); l != ov.Len() {
-					panic(fmt.Errorf("length does not match size expression (%d != %d)", ov.Len(), l))
+				cap = e.evalSize(f)
+				if cap < len {
+					panic(fmt.Errorf("length exceeds size expression (%d > %d)", len, cap))
 				}
 			}
 			fallthrough
 		case reflect.Array:
 			ef := f.Elem()
-			len := ov.Len()
-			cap := len
 			if f.BinaryType.Kind() == reflect.Array {
 				cap = f.BinaryType.Len()
 			}
@@ -309,8 +315,6 @@ func (e *encoder) write(f field, v reflect.Value) {
 			for i := len; i < cap; i++ {
 				e.write(ef, reflect.New(f.BinaryType.Elem()).Elem())
 			}
-		default:
-			panic(fmt.Errorf("invalid array cast type: %s", f.NativeType.String()))
 		}
 
 	case reflect.Struct:
